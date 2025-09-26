@@ -1,0 +1,64 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48276e73fa3db7a46892258efbd7a2d1, type: 3}
+  m_Name: SevenErrorsConfig
+  m_EditorClassIdentifier: 
+  gameTimeInSeconds: 120
+  totalErrors: 7
+  errors:
+  - errorMessage: 
+    errorName: 
+    recommendedPosition: {x: 0, y: 0}
+    recommendedSize: {x: 1, y: 1}
+  - errorMessage: 
+    errorName: 
+    recommendedPosition: {x: 0, y: 0}
+    recommendedSize: {x: 1, y: 1}
+  - errorMessage: 
+    errorName: 
+    recommendedPosition: {x: 0, y: 0}
+    recommendedSize: {x: 1, y: 1}
+  - errorMessage: 
+    errorName: 
+    recommendedPosition: {x: 0, y: 0}
+    recommendedSize: {x: 1, y: 1}
+  - errorMessage: 
+    errorName: 
+    recommendedPosition: {x: 0, y: 0}
+    recommendedSize: {x: 1, y: 1}
+  - errorMessage: 
+    errorName: 
+    recommendedPosition: {x: 0, y: 0}
+    recommendedSize: {x: 1, y: 1}
+  - errorMessage: 
+    errorName: 
+    recommendedPosition: {x: 0, y: 0}
+    recommendedSize: {x: 1, y: 1}
+  successMessage: "Parab\xE9ns! Voc\xEA encontrou os 7 erros que definitivamente
+    n\xE3o ser\xE3o repetidos no pr\xF3ximo evento! Os pontos das habilidades foram
+    creditados em seu cart\xE3o:"
+  timeoutMessage: "Tempo esgotado! Voc\xEA n\xE3o encontrou todos os 7 erros. Respire
+    fundo, observe com aten\xE7\xE3o e tente novamente."
+  highScore:
+    empatia: 8
+    criatividade: 7
+    resolucaoProblemas: 6
+  mediumScore:
+    empatia: 7
+    criatividade: 6
+    resolucaoProblemas: 5
+  lowScore:
+    empatia: 6
+    criatividade: 5
+    resolucaoProblemas: 4
+  highScoreThreshold: 5
+  mediumScoreThreshold: 2
