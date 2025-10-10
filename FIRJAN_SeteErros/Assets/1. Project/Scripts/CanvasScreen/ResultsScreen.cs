@@ -1,6 +1,8 @@
+using System.Text;
+using _4._NFC_Firjan.Scripts.Server;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 /// <summary>
 /// Tela de resultados do Jogo dos 7 Erros
@@ -15,6 +17,7 @@ public class ResultsScreen : CanvasScreen
     [SerializeField] private TextMeshProUGUI empatiaScoreText;
     [SerializeField] private TextMeshProUGUI criatividadeScoreText;
     [SerializeField] private TextMeshProUGUI resolucaoProblemasScoreText;
+    [SerializeField] private TextMeshProUGUI nfcStatusText;
 
     [Header("Buttons")]
     [SerializeField] private Button playAgainButton;
@@ -114,6 +117,7 @@ public class ResultsScreen : CanvasScreen
 
         // Configura painéis condicionais
         ConfigureConditionalPanels();
+        UpdateNfcStatus();
     }
 
     /// <summary>
@@ -150,7 +154,7 @@ public class ResultsScreen : CanvasScreen
         GameResultData.Reset();
 
         // Volta para a tela de gameplay
-        CallScreenByName("GameplayScreen");
+        CallScreenByName("cta");
     }
 
     /// <summary>
@@ -187,5 +191,50 @@ public class ResultsScreen : CanvasScreen
         GameResultData.timeRemaining = 0f;
         GameResultData.completedAllErrors = false;
         DisplayResults();
+    }
+
+    private void UpdateNfcStatus()
+    {
+        if (nfcStatusText == null)
+        {
+            return;
+        }
+
+        NFCGameService service = NFCGameService.Instance;
+
+        if (service == null)
+        {
+            nfcStatusText.text = "NFC: Serviço indisponível.";
+            return;
+        }
+
+        if (!service.HasCard)
+        {
+            nfcStatusText.text = "NFC: Nenhum cartão detectado.";
+            return;
+        }
+
+        StringBuilder builder = new StringBuilder();
+        builder.AppendLine($"Cartão: {service.CurrentNfcId}");
+
+        if (!string.IsNullOrEmpty(service.CurrentReaderName))
+        {
+            builder.AppendLine($"Leitor: {service.CurrentReaderName}");
+        }
+
+        EndGameResponseModel response = service.LastResponse;
+
+        if (response?.attributes != null)
+        {
+            builder.AppendLine($"Empatia total: {response.attributes.empathy}");
+            builder.AppendLine($"Criatividade total: {response.attributes.creativity}");
+            builder.AppendLine($"Resolução total: {response.attributes.problem_solving}");
+        }
+        else
+        {
+            builder.Append("Sincronizando com o servidor...");
+        }
+
+        nfcStatusText.text = builder.ToString();
     }
 }

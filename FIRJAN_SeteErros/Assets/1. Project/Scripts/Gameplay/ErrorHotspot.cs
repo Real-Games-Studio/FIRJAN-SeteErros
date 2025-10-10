@@ -15,7 +15,7 @@ public class ErrorHotspot : MonoBehaviour
     [SerializeField] private bool isFound = false;
 
     [Header("Visual Feedback")]
-    [SerializeField] private GameObject foundIndicator; // Objeto que aparece quando encontrado
+    [SerializeField] private GameObject foundIndicator; // Objeto que aparece quando encontrado (filho deste GameObject)
     [SerializeField] private Color highlightColor = Color.yellow;
     [SerializeField] private float highlightDuration = 0.5f;
 
@@ -25,6 +25,8 @@ public class ErrorHotspot : MonoBehaviour
     // Public properties
     public bool IsFound => isFound;
     public int ErrorIndex => errorIndex;
+
+    private Color initialColor;
 
     // Components
     private Button hotspotButton;
@@ -36,6 +38,7 @@ public class ErrorHotspot : MonoBehaviour
         buttonImage = GetComponent<Image>();
 
 
+        initialColor = buttonImage.color;
         // Configura o clique do botão
         if (hotspotButton != null)
         {
@@ -49,6 +52,16 @@ public class ErrorHotspot : MonoBehaviour
         if (foundIndicator != null)
         {
             foundIndicator.SetActive(false);
+        }
+        else
+        {
+            // Se não foi atribuído no inspector, tenta encontrar um GameObject filho com nome específico
+            Transform childIndicator = transform.Find("FoundIndicator");
+            if (childIndicator != null)
+            {
+                foundIndicator = childIndicator.gameObject;
+                foundIndicator.SetActive(false);
+            }
         }
     }
 
@@ -114,10 +127,11 @@ public class ErrorHotspot : MonoBehaviour
     /// </summary>
     private void ShowFoundFeedback()
     {
-        // Ativa indicador visual se existir
+        // Ativa indicador visual (GameObject filho) quando acerta
         if (foundIndicator != null)
         {
             foundIndicator.SetActive(true);
+            Debug.Log($"Ativado indicador visual para erro {errorIndex + 1}: {foundIndicator.name}");
         }
 
         // Efeito de highlight temporário
@@ -137,7 +151,7 @@ public class ErrorHotspot : MonoBehaviour
             // Espera a duração
             yield return new WaitForSeconds(highlightDuration);
 
-            // Remove o highlight
+            // // Remove o highlight
             buttonImage.color = Color.clear;
         }
     }
@@ -161,6 +175,7 @@ public class ErrorHotspot : MonoBehaviour
             foundIndicator.SetActive(false);
         }
 
+        buttonImage.color = initialColor;
     }
 
     /// <summary>
@@ -207,6 +222,44 @@ public class ErrorHotspot : MonoBehaviour
     {
         Gizmos.color = Color.yellow;
         Gizmos.DrawCube(transform.position, transform.localScale);
+    }
+
+    /// <summary>
+    /// Desabilita temporariamente o botão (durante zoom/pan)
+    /// </summary>
+    public void DisableButton()
+    {
+        if (hotspotButton != null && !isFound)
+        {
+            hotspotButton.interactable = false;
+        }
+    }
+
+    /// <summary>
+    /// Reabilita o botão após zoom/pan
+    /// </summary>
+    public void EnableButton()
+    {
+        if (hotspotButton != null && !isFound)
+        {
+            hotspotButton.interactable = true;
+        }
+    }
+
+    /// <summary>
+    /// Simula um clique no hotspot (para testes)
+    /// </summary>
+    public void SimulateClick()
+    {
+        OnHotspotClicked();
+    }
+
+    /// <summary>
+    /// Configura o índice do hotspot
+    /// </summary>
+    public void SetErrorIndex(int index)
+    {
+        errorIndex = index;
     }
 
     private void OnDestroy()

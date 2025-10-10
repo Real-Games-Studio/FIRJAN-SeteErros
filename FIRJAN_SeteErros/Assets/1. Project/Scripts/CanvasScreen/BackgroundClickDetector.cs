@@ -24,11 +24,19 @@ public class BackgroundClickDetector : MonoBehaviour
 
     private void OnBackgroundClicked()
     {
-        if (gameplayScreen != null)
+        if (gameplayScreen != null && backgroundButton.interactable)
         {
             Debug.Log("Clique na imagem de fundo detectado!");
             gameplayScreen.OnBackgroundClicked();
         }
+    }
+
+    /// <summary>
+    /// Simula um clique no background (para testes)
+    /// </summary>
+    public void SimulateClick()
+    {
+        OnBackgroundClicked();
     }
 
     private void OnDestroy()

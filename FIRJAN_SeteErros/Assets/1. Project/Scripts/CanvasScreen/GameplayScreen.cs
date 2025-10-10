@@ -17,11 +17,16 @@ public class GameplayScreen : CanvasScreen
 
     [Header("UI Elements")]
     [SerializeField] private TextMeshProUGUI timerText;
-    [SerializeField] private TextMeshProUGUI errorCounterText;
+    [SerializeField] private Image timerFillImage;
     [SerializeField] private Image gameImage;
     [SerializeField] private Transform gameImageParent; // Para zoom e pan
     [SerializeField] private ErrorPopup errorPopup; // Popup já existente como filho
-    [SerializeField] private Image[] wrongAttemptMarkers; // Array de 3 X's para mostrar tentativas erradas
+
+    [Header("Visual Progress Indicators")]
+    [SerializeField] private Transform errorsFoundParent; // Parent com 7 imagens para mostrar erros encontrados
+    [SerializeField] private Color errorFoundColor = Color.green; // Cor para quando encontra um erro
+    [SerializeField] private Transform wrongAttemptsParent; // Parent com 3 imagens para mostrar tentativas erradas
+    [SerializeField] private Color wrongAttemptColor = Color.red; // Cor para tentativas erradas
 
     [Header("Game Elements")]
     [SerializeField] private ErrorHotspot[] errorHotspots;
@@ -39,15 +44,22 @@ public class GameplayScreen : CanvasScreen
 
     // Game State
     private float currentTime;
+    private float initialGameTime;
     private int errorsFound = 0;
     private int totalErrors = 7;
     private int wrongAttempts = 0;
     private int maxWrongAttempts = 3;
     private bool gameActive = false;
 
+    [Header("Integrations")]
+    [SerializeField] private NFCGameService nfcGameService;
+
     // Touch controls
     private Vector3 lastTouchPosition;
     private bool isDragging = false;
+    private bool isZooming = false;
+    private bool buttonsDisabled = false;
+    private bool awaitingFinalPopup = false;
 
     // Visual feedback
     private Color originalImageColor;
@@ -80,6 +92,10 @@ public class GameplayScreen : CanvasScreen
     private void StartGame()
     {
         gameActive = true;
+        awaitingFinalPopup = false;
+
+        GameResultData.Reset();
+        GameResultData.SetGameConfig(gameConfig);
 
         // Usa configuração se disponível
         if (gameConfig != null)
@@ -97,6 +113,7 @@ public class GameplayScreen : CanvasScreen
 
         errorsFound = 0;
         wrongAttempts = 0;
+        initialGameTime = currentTime;
 
         // Armazena cor original da imagem
         if (gameImage != null)
@@ -114,13 +131,24 @@ public class GameplayScreen : CanvasScreen
             }
         }
 
-        // Reseta marcadores de tentativas erradas
-        ResetWrongAttemptMarkers();
+        // Reseta indicadores visuais
+        ResetVisualIndicators();
+
+        // Garante que o popup comece fechado
+        if (errorPopup != null)
+        {
+            errorPopup.gameObject.SetActive(false);
+        }
 
         UpdateUI();
 
+        EnsureNfcServiceReference();
+
         // Reseta posição e zoom da imagem
         ResetImageTransform();
+
+        // Garante fill do timer cheio no início
+        UpdateTimerFill();
     }
 
     /// <summary>
@@ -172,43 +200,89 @@ public class GameplayScreen : CanvasScreen
             }
             else if (Input.touchCount == 2)
             {
+                // Zoom com pinça - desabilita botões temporariamente
+                if (!isZooming)
+                {
+                    StartZooming();
+                }
                 HandlePinchZoom();
             }
+
         }
         // Suporte para mouse (apenas quando não há toques ativos)
         else
         {
+            // Detecta Ctrl+Click para simular zoom pinça
+            bool ctrlPressed = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+
             if (Input.GetMouseButtonDown(0))
             {
                 Vector3 mousePos = Input.mousePosition;
                 Vector3 worldPos = gameCamera.ScreenToWorldPoint(new Vector3(mousePos.x, mousePos.y, gameCamera.nearClipPlane));
 
-                lastTouchPosition = worldPos;
-                isDragging = true;
+                if (ctrlPressed)
+                {
+                    // Ctrl+Click - inicia simulação de zoom pinça
+                    if (!isZooming)
+                    {
+                        StartZooming();
+                    }
+                }
+                else
+                {
+                    // Clique normal - pan/drag
+                    lastTouchPosition = worldPos;
+                    isDragging = true;
+                }
+
                 NotifyPlayerActivity(); // Notifica atividade do jogador
             }
-            else if (Input.GetMouseButton(0) && isDragging)
+            else if (Input.GetMouseButton(0) && isDragging && !ctrlPressed)
             {
+                // Pan/drag normal (sem Ctrl)
                 Vector3 mousePos = Input.mousePosition;
                 Vector3 currentMousePos = gameCamera.ScreenToWorldPoint(new Vector3(mousePos.x, mousePos.y, gameCamera.nearClipPlane));
                 Vector3 difference = lastTouchPosition - currentMousePos;
                 gameImageParent.position += difference;
                 lastTouchPosition = currentMousePos;
             }
+            else if (Input.GetMouseButton(0) && ctrlPressed && isZooming)
+            {
+                // Simula zoom pinça com Ctrl+Drag
+                HandleMouseZoomSimulation();
+            }
             else if (Input.GetMouseButtonUp(0))
             {
                 isDragging = false;
+                if (isZooming && ctrlPressed)
+                {
+                    StopZooming();
+                }
             }
 
             // Zoom com scroll do mouse
             float scroll = Input.GetAxis("Mouse ScrollWheel");
             if (scroll != 0)
             {
+                if (!isZooming)
+                {
+                    StartZooming();
+                }
+
                 float currentZoom = gameCamera.orthographicSize;
                 currentZoom -= scroll * zoomSpeed;
                 currentZoom = Mathf.Clamp(currentZoom, minZoom, maxZoom);
                 gameCamera.orthographicSize = currentZoom;
+
+                // Para o zoom após usar scroll (com delay)
+                StartCoroutine(StopZoomAfterDelay(0.1f));
             }
+        }
+
+        // Para o zoom se não há mais interações
+        if (isZooming && Input.touchCount == 0 && !Input.GetMouseButton(0))
+        {
+            StopZooming();
         }
     }
 
@@ -276,6 +350,106 @@ public class GameplayScreen : CanvasScreen
     }
 
     /// <summary>
+    /// Inicia o modo zoom - desabilita botões temporariamente
+    /// </summary>
+    private void StartZooming()
+    {
+        isZooming = true;
+        DisableAllButtons();
+    }
+
+    /// <summary>
+    /// Para o modo zoom - reabilita botões
+    /// </summary>
+    private void StopZooming()
+    {
+        isZooming = false;
+        EnableAllButtons();
+    }
+
+    /// <summary>
+    /// Simula zoom pinça com mouse (Ctrl+Drag)
+    /// </summary>
+    private void HandleMouseZoomSimulation()
+    {
+        float mouseY = Input.mousePosition.y;
+        float deltaY = mouseY - lastTouchPosition.y;
+
+        float currentZoom = gameCamera.orthographicSize;
+        currentZoom -= deltaY * zoomSpeed * 0.001f; // Sensibilidade ajustada
+        currentZoom = Mathf.Clamp(currentZoom, minZoom, maxZoom);
+        gameCamera.orthographicSize = currentZoom;
+
+        lastTouchPosition = Input.mousePosition;
+    }
+
+    /// <summary>
+    /// Desabilita todos os botões (hotspots e fundo)
+    /// </summary>
+    private void DisableAllButtons()
+    {
+        if (buttonsDisabled) return;
+
+        buttonsDisabled = true;
+
+        // Desabilita hotspots
+        foreach (var hotspot in errorHotspots)
+        {
+            if (hotspot != null)
+            {
+                hotspot.DisableButton();
+            }
+        }
+
+        // Desabilita botão de fundo
+        var bgDetector = FindFirstObjectByType<BackgroundClickDetector>();
+        if (bgDetector != null)
+        {
+            var button = bgDetector.GetComponent<Button>();
+            if (button != null) button.interactable = false;
+        }
+    }
+
+    /// <summary>
+    /// Reabilita todos os botões
+    /// </summary>
+    private void EnableAllButtons()
+    {
+        if (!buttonsDisabled) return;
+
+        buttonsDisabled = false;
+
+        // Reabilita hotspots
+        foreach (var hotspot in errorHotspots)
+        {
+            if (hotspot != null)
+            {
+                hotspot.EnableButton();
+            }
+        }
+
+        // Reabilita botão de fundo
+        var bgDetector = FindFirstObjectByType<BackgroundClickDetector>();
+        if (bgDetector != null)
+        {
+            var button = bgDetector.GetComponent<Button>();
+            if (button != null) button.interactable = true;
+        }
+    }
+
+    /// <summary>
+    /// Para o zoom após um delay (para scroll wheel)
+    /// </summary>
+    private System.Collections.IEnumerator StopZoomAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (isZooming && Input.touchCount == 0 && !Input.GetMouseButton(0))
+        {
+            StopZooming();
+        }
+    }
+
+    /// <summary>
     /// Chamado quando um erro é encontrado
     /// </summary>
     private void OnErrorFound(int errorIndex)
@@ -288,25 +462,61 @@ public class GameplayScreen : CanvasScreen
         // Notifica atividade do jogador
         NotifyPlayerActivity();
 
-        // Mostra popup com mensagem educativa
-        ShowErrorPopup(errorIndex);
+        bool isLastError = errorsFound >= totalErrors;
 
-        // Verifica se todos os erros foram encontrados
-        if (errorsFound >= totalErrors)
+        if (isLastError)
         {
-            EndGameByCompletion();
+            awaitingFinalPopup = true;
+            gameActive = false; // Pausa o jogo enquanto o jogador lê o último popup
+
+            ShowErrorPopup(errorIndex, () =>
+            {
+                awaitingFinalPopup = false;
+                EndGameByCompletion();
+            });
+        }
+        else
+        {
+            // Mostra popup normal para erros intermediários
+            ShowErrorPopup(errorIndex);
         }
     }
 
     /// <summary>
     /// Mostra popup com mensagem educativa
     /// </summary>
-    private void ShowErrorPopup(int errorIndex)
+    private void ShowErrorPopup(int errorIndex, System.Action onClosed = null)
     {
         if (errorPopup != null)
         {
             string message = gameConfig != null ? gameConfig.GetErrorMessage(errorIndex) : "Erro encontrado!";
-            errorPopup.ShowPopup(message);
+            ShowBlockingPopup(message, onClosed);
+        }
+        else
+        {
+            // Se não houver popup configurado, executa imediatamente o callback
+            onClosed?.Invoke();
+        }
+    }
+
+    /// <summary>
+    /// Exibe um popup bloqueando interações até ser fechado
+    /// </summary>
+    private void ShowBlockingPopup(string message, System.Action onClosed = null)
+    {
+        if (errorPopup != null)
+        {
+            DisableAllButtons();
+
+            errorPopup.ShowPopup(message, () =>
+            {
+                EnableAllButtons();
+                onClosed?.Invoke();
+            });
+        }
+        else
+        {
+            onClosed?.Invoke();
         }
     }
 
@@ -323,6 +533,8 @@ public class GameplayScreen : CanvasScreen
         GameResultData.completedAllErrors = true;
         GameResultData.maxWrongAttemptsReached = false;
         GameResultData.wrongAttempts = wrongAttempts;
+
+        SubmitNfcScore();
 
         CallNextScreen();
     }
@@ -341,6 +553,8 @@ public class GameplayScreen : CanvasScreen
         GameResultData.maxWrongAttemptsReached = false;
         GameResultData.wrongAttempts = wrongAttempts;
 
+        SubmitNfcScore();
+
         CallNextScreen();
     }
 
@@ -358,10 +572,12 @@ public class GameplayScreen : CanvasScreen
         GameResultData.maxWrongAttemptsReached = true;
         GameResultData.wrongAttempts = wrongAttempts;
 
+        SubmitNfcScore();
+
         // Mostra popup com mensagem de tentativas esgotadas
-        if (errorPopup != null && gameConfig != null)
+        if (gameConfig != null)
         {
-            errorPopup.ShowPopup(gameConfig.maxWrongAttemptsMessage, () =>
+            ShowBlockingPopup(gameConfig.maxWrongAttemptsMessage, () =>
             {
                 // Quando o popup for fechado, vai para a tela de resultados
                 CallNextScreen();
@@ -380,7 +596,7 @@ public class GameplayScreen : CanvasScreen
     private void UpdateUI()
     {
         UpdateTimerUI();
-        UpdateErrorCounterUI();
+        UpdateErrorsFoundVisual();
     }
 
     /// <summary>
@@ -388,22 +604,63 @@ public class GameplayScreen : CanvasScreen
     /// </summary>
     private void UpdateTimerUI()
     {
+        UpdateTimerFill();
+
         if (timerText != null)
         {
-            int minutes = Mathf.FloorToInt(currentTime / 60f);
-            int seconds = Mathf.FloorToInt(currentTime % 60f);
-            timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
+            int secondsRemaining = Mathf.CeilToInt(currentTime);
+            if (secondsRemaining < 0) secondsRemaining = 0;
+            timerText.text = $"{secondsRemaining}";
         }
     }
 
     /// <summary>
-    /// Atualiza o contador de erros na UI
+    /// Atualiza o fill da imagem do timer
     /// </summary>
-    private void UpdateErrorCounterUI()
+    private void UpdateTimerFill()
     {
-        if (errorCounterText != null)
+        if (timerFillImage == null) return;
+
+        if (initialGameTime <= 0f)
         {
-            errorCounterText.text = $"{errorsFound}/{totalErrors}";
+            timerFillImage.fillAmount = 0f;
+            return;
+        }
+
+        float normalizedTime = Mathf.Clamp01(currentTime / initialGameTime);
+        timerFillImage.fillAmount = normalizedTime;
+    }
+
+    /// <summary>
+    /// Atualiza os indicadores visuais dos erros encontrados
+    /// </summary>
+    private void UpdateErrorsFoundVisual()
+    {
+        if (errorsFoundParent == null) return;
+
+        // Pega apenas as imagens dos filhos diretos, ignorando a imagem do próprio parent
+        var errorImages = new List<Image>();
+        for (int childIndex = 0; childIndex < errorsFoundParent.childCount; childIndex++)
+        {
+            var childImage = errorsFoundParent.GetChild(childIndex).GetComponent<Image>();
+            if (childImage != null)
+            {
+                errorImages.Add(childImage);
+            }
+        }
+
+        for (int i = 0; i < errorImages.Count; i++)
+        {
+            if (i < errorsFound)
+            {
+                // Pinta a imagem com a cor configurada quando encontra esse erro
+                errorImages[i].color = errorFoundColor;
+            }
+            else
+            {
+                // Mantém cor original/transparente se ainda não encontrou
+                errorImages[i].color = Color.white;
+            }
         }
     }
 
@@ -432,8 +689,35 @@ public class GameplayScreen : CanvasScreen
     {
         if (ScreenCanvasController.instance != null)
         {
-            ScreenCanvasController.instance.NFCInputHandler("player_activity");
+            ScreenCanvasController.instance.inactiveTimer = 0;
         }
+    }
+
+    private void EnsureNfcServiceReference()
+    {
+        if (nfcGameService == null)
+        {
+            nfcGameService = FindFirstObjectByType<NFCGameService>();
+            if (nfcGameService == null)
+            {
+                GameObject serviceObject = new GameObject("NFC Game Service");
+                nfcGameService = serviceObject.AddComponent<NFCGameService>();
+                Debug.Log("[NFC] NFCGameService criado dinamicamente em tempo de execução.");
+            }
+        }
+    }
+
+    private void SubmitNfcScore()
+    {
+        EnsureNfcServiceReference();
+
+        if (nfcGameService == null)
+        {
+            return;
+        }
+
+        ScoreData score = GameResultData.GetScore();
+        nfcGameService.SubmitGameResult(score, GameResultData.completedAllErrors, GameResultData.errorsFound, GameResultData.wrongAttempts, GameResultData.timeRemaining);
     }
 
 
@@ -466,8 +750,8 @@ public class GameplayScreen : CanvasScreen
         // Mostra feedback visual
         StartCoroutine(ShowWrongAttemptFeedback());
 
-        // Atualiza marcadores visuais
-        UpdateWrongAttemptMarkers();
+        // Atualiza indicadores visuais das tentativas erradas
+        UpdateWrongAttemptsVisual();
 
         // Verifica se atingiu o máximo de tentativas erradas
         if (wrongAttempts >= maxWrongAttempts)
@@ -508,34 +792,69 @@ public class GameplayScreen : CanvasScreen
     }
 
     /// <summary>
-    /// Atualiza os marcadores visuais de tentativas erradas (X's)
+    /// Atualiza os indicadores visuais das tentativas erradas
     /// </summary>
-    private void UpdateWrongAttemptMarkers()
+    private void UpdateWrongAttemptsVisual()
     {
-        if (wrongAttemptMarkers == null) return;
+        if (wrongAttemptsParent == null) return;
 
-        for (int i = 0; i < wrongAttemptMarkers.Length; i++)
+        // Pega apenas as imagens dos filhos diretos, ignorando a imagem do próprio parent
+        var wrongAttemptImages = new List<Image>();
+        for (int childIndex = 0; childIndex < wrongAttemptsParent.childCount; childIndex++)
         {
-            if (wrongAttemptMarkers[i] != null)
+            var childImage = wrongAttemptsParent.GetChild(childIndex).GetComponent<Image>();
+            if (childImage != null)
             {
-                wrongAttemptMarkers[i].gameObject.SetActive(i < wrongAttempts);
+                wrongAttemptImages.Add(childImage);
+            }
+        }
+
+        for (int i = 0; i < wrongAttemptImages.Count; i++)
+        {
+            if (i < wrongAttempts)
+            {
+                // Pinta a imagem com a cor configurada quando erra essa tentativa
+                wrongAttemptImages[i].color = wrongAttemptColor;
+            }
+            else
+            {
+                // Mantém cor original/transparente se ainda não errou
+                wrongAttemptImages[i].color = Color.white;
             }
         }
     }
 
     /// <summary>
-    /// Reseta os marcadores de tentativas erradas
+    /// Reseta os indicadores visuais
     /// </summary>
-    private void ResetWrongAttemptMarkers()
+    private void ResetVisualIndicators()
     {
-        if (wrongAttemptMarkers == null) return;
-
-        foreach (var marker in wrongAttemptMarkers)
+        // Reseta indicadores de erros encontrados - apenas filhos diretos
+        if (errorsFoundParent != null)
         {
-            if (marker != null)
+            for (int childIndex = 0; childIndex < errorsFoundParent.childCount; childIndex++)
             {
-                marker.gameObject.SetActive(false);
+                var childImage = errorsFoundParent.GetChild(childIndex).GetComponent<Image>();
+                if (childImage != null)
+                {
+                    childImage.color = Color.white;
+                }
+            }
+        }
+
+        // Reseta indicadores de tentativas erradas - apenas filhos diretos
+        if (wrongAttemptsParent != null)
+        {
+            for (int childIndex = 0; childIndex < wrongAttemptsParent.childCount; childIndex++)
+            {
+                var childImage = wrongAttemptsParent.GetChild(childIndex).GetComponent<Image>();
+                if (childImage != null)
+                {
+                    childImage.color = Color.white;
+                }
             }
         }
     }
+
+
 }

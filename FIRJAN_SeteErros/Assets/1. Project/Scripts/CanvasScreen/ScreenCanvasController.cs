@@ -71,10 +71,7 @@ public class ScreenCanvasController : MonoBehaviour
         previusScreen = currentScreen;
         currentScreen = name;
     }
-    public void NFCInputHandler(string obj)
-    {
-        inactiveTimer = 0;
-    }
+
 
     public void CallAnyScreenByName(string name)
     {

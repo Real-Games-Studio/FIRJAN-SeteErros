@@ -39,8 +39,7 @@ namespace _4._NFC_Firjan.Scripts.Server
 		/// <summary>
 		/// Informação deve ser enviada após o jogo para atualizar a pontuação do jogador, aconselho colocar o id do jogo por Json
 		/// </summary>
-		/// <param name=">gameInfo"><see cref="GameModel"/></param>
-		/// Pontuação de cada jogo funciona diferente, olhar no <see href="https://docs.google.com/document/d/14COKL4PcHkT3_J_TiCc79gAZNwbT6pKFmMdV3G9mY0Q/edit?usp=sharing">documento</see>
+		/// <param name=">gameInfo"><see cref="GameModel"/> Pontuação de cada jogo funciona diferente, olhar no <see href="https://docs.google.com/document/d/14COKL4PcHkT3_J_TiCc79gAZNwbT6pKFmMdV3G9mY0Q/edit?usp=sharing">documento</see></param>
 		/// <returns>Codigo de status do update ao server <see cref="HttpStatusCode"/></returns>
 		public async Task<HttpStatusCode> UpdateNfcInfoFromGame(GameModel gameInfo)
 		{
