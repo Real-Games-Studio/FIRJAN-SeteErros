@@ -14,33 +14,56 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gameTimeInSeconds: 120
   totalErrors: 7
+  maxWrongAttempts: 3
+  redTintIntensity: 0.3
+  redTintDuration: 0.5
   errors:
-  - errorMessage: 
-    errorName: 
+  - errorTitle: FILA PREFERENCIAL<BR>IGNORADA
+    errorMessage: "Exato! Filas preferenciais garantem o acesso de quem mais precisa.
+      Respeit\xE1-las \xE9 um gesto simples de cidadania e empatia."
+    errorName: Fila presencial ignorada
     recommendedPosition: {x: 0, y: 0}
     recommendedSize: {x: 1, y: 1}
-  - errorMessage: 
-    errorName: 
+  - errorTitle: RAMPA DE ACESSO AO<BR>PASSEIO BLOQUEADA POR<BR>UM CARRO
+    errorMessage: "Bem observado! Para quem usa cadeira de rodas, a rampa n\xE3o
+      \xE9 uma op\xE7\xE3o, \xE9 a \xFAnica passagem. Garantir o acesso \xE9 garantir
+      a liberdade de todos."
+    errorName: Rampa de acesso bloqueada
     recommendedPosition: {x: 0, y: 0}
     recommendedSize: {x: 1, y: 1}
-  - errorMessage: 
-    errorName: 
+  - errorTitle: "SA\xCDDA DE EMERG\xCANCIA<BR>OBSTRU\xCDDA"
+    errorMessage: "Perfeito! Em uma emerg\xEAncia, cada segundo conta e um caminho
+      livre pode salvar vidas. Seguran\xE7a \xE9 uma responsabilidade coletiva."
+    errorName: "Sa\xEDda de emerg\xEAncia obstru\xEDda"
     recommendedPosition: {x: 0, y: 0}
     recommendedSize: {x: 1, y: 1}
-  - errorMessage: 
-    errorName: 
+  - errorTitle: "VAGA PREFERENCIAL<BR>OCUPADA POR UM CARRO<BR>SEM IDENTIFICA\xC7\xC3O"
+    errorMessage: "Isso mesmo! Vagas preferenciais n\xE3o s\xE3o sobre privil\xE9gio,
+      s\xE3o sobre necessidade. Elas diminuem a dist\xE2ncia para quem realmente
+      precisa. Respeito \xE9 fundamental."
+    errorName: Vaga preferencial ocupada indevidamente
     recommendedPosition: {x: 0, y: 0}
     recommendedSize: {x: 1, y: 1}
-  - errorMessage: 
-    errorName: 
+  - errorTitle: "USO INDEVIDO DE<BR>ASSENTO PRIORIT\xC1RIO"
+    errorMessage: "\xD3tima percep\xE7\xE3o! Em espa\xE7os compartilhados, o assento
+      priorit\xE1rio garante o conforto e a seguran\xE7a de quem precisa. Estar atento
+      ao redor \xE9 o primeiro passo da empatia."
+    errorName: "Uso indevido de assento priorit\xE1rio"
     recommendedPosition: {x: 0, y: 0}
     recommendedSize: {x: 1, y: 1}
-  - errorMessage: 
-    errorName: 
+  - errorTitle: LIXO JOGADO NA RUA<BR>PERTO DA LIXEIRA
+    errorMessage: "Voc\xEA encontrou! Manter nosso ambiente limpo torna o parque
+      mais agrad\xE1vel para todos e demonstra nosso cuidado com o que \xE9 coletivo.
+      Um pequeno gesto faz uma grande diferen\xE7a."
+    errorName: Lixo jogado na rua
     recommendedPosition: {x: 0, y: 0}
     recommendedSize: {x: 1, y: 1}
-  - errorMessage: 
-    errorName: 
+  - errorTitle: "PISO T\xC1TIL BLOQUEADO"
+    errorMessage: "Exato! Para uma pessoa com defici\xEAncia visual, o piso t\xE1til
+      s\xE3o os olhos que a guiam pelo caminho. Bloque\xE1-lo \xE9 como criar uma
+      barreira invis\xEDvel. Inclus\xE3o \xE9 garantir que todos os caminhos estejam
+      abertos."
+    errorName: "Piso t\xE1til bloqueado"
     recommendedPosition: {x: 0, y: 0}
     recommendedSize: {x: 1, y: 1}
   successMessage: "Parab\xE9ns! Voc\xEA encontrou os 7 erros que definitivamente
@@ -48,6 +71,8 @@ MonoBehaviour:
     creditados em seu cart\xE3o:"
   timeoutMessage: "Tempo esgotado! Voc\xEA n\xE3o encontrou todos os 7 erros. Respire
     fundo, observe com aten\xE7\xE3o e tente novamente."
+  maxWrongAttemptsMessage: "Voc\xEA n\xE3o encontrou todos os 7 erros. Respire fundo,
+    observe com aten\xE7\xE3o e tente novamente."
   highScore:
     empatia: 8
     criatividade: 7

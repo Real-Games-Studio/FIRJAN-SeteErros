@@ -9,6 +9,7 @@ using UnityEngine.UI;
 public class ErrorPopup : MonoBehaviour
 {
     [Header("UI Elements")]
+    [SerializeField] private TextMeshProUGUI titleText;     // Novo campo para o título
     [SerializeField] private TextMeshProUGUI messageText;
     [SerializeField] private Button closeButton;
     [SerializeField] private CanvasGroup canvasGroup;
@@ -54,14 +55,21 @@ public class ErrorPopup : MonoBehaviour
     }
 
     /// <summary>
-    /// Mostra o popup com a mensagem especificada
+    /// Mostra o popup com o título e mensagem especificados
     /// </summary>
+    /// <param name="title">Título do erro</param>
     /// <param name="message">Mensagem educativa a ser exibida</param>
     /// <param name="onClosed">Callback opcional para quando o popup for fechado</param>
-    public void ShowPopup(string message, System.Action onClosed = null)
+    public void ShowPopup(string title, string message, System.Action onClosed = null)
     {
         // Define o callback
         OnPopupClosed = onClosed;
+
+        // Define o título
+        if (titleText != null)
+        {
+            titleText.text = title;
+        }
 
         // Define o texto da mensagem
         if (messageText != null)
@@ -74,6 +82,16 @@ public class ErrorPopup : MonoBehaviour
 
         // Inicia animação de entrada
         StartCoroutine(ShowAnimation());
+    }
+
+    /// <summary>
+    /// Mostra o popup apenas com a mensagem (para compatibilidade)
+    /// </summary>
+    /// <param name="message">Mensagem educativa a ser exibida</param>
+    /// <param name="onClosed">Callback opcional para quando o popup for fechado</param>
+    public void ShowPopup(string message, System.Action onClosed = null)
+    {
+        ShowPopup("Erro Encontrado!", message, onClosed);
     }    /// <summary>
          /// Fecha o popup
          /// </summary>

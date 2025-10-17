@@ -10,6 +10,7 @@ public class SevenErrorsConfig : ScriptableObject
     [System.Serializable]
     public class ErrorData
     {
+        public string errorTitle;
         [TextArea(3, 5)]
         public string errorMessage;
         public string errorName;
@@ -69,25 +70,39 @@ public class SevenErrorsConfig : ScriptableObject
             System.Array.Resize(ref errors, 7);
         }
 
-        // Preenche mensagens padrão se estiverem vazias
+        // Preenche títulos e mensagens padrão se estiverem vazias
+        if (string.IsNullOrEmpty(errors[0].errorTitle))
+            errors[0].errorTitle = "Respeito às Filas Preferenciais";
         if (errors[0].errorMessage == "")
             errors[0].errorMessage = "Exato! Filas preferenciais garantem o acesso de quem mais precisa. Respeitá-las é um gesto simples de cidadania e empatia.";
 
+        if (string.IsNullOrEmpty(errors[1].errorTitle))
+            errors[1].errorTitle = "Acessibilidade em Rampas";
         if (errors[1].errorMessage == "")
             errors[1].errorMessage = "Bem observado! Para quem usa cadeira de rodas, a rampa não é uma opção, é a única passagem. Garantir o acesso é garantir a liberdade de todos.";
 
+        if (string.IsNullOrEmpty(errors[2].errorTitle))
+            errors[2].errorTitle = "Segurança em Emergências";
         if (errors[2].errorMessage == "")
             errors[2].errorMessage = "Perfeito! Em uma emergência, cada segundo conta e um caminho livre pode salvar vidas. Segurança é uma responsabilidade coletiva.";
 
+        if (string.IsNullOrEmpty(errors[3].errorTitle))
+            errors[3].errorTitle = "Vagas Preferenciais";
         if (errors[3].errorMessage == "")
             errors[3].errorMessage = "Isso mesmo! Vagas preferenciais não são sobre privilégio, são sobre necessidade. Elas diminuem a distância para quem realmente precisa. Respeito é fundamental.";
 
+        if (string.IsNullOrEmpty(errors[4].errorTitle))
+            errors[4].errorTitle = "Assentos Prioritários";
         if (errors[4].errorMessage == "")
             errors[4].errorMessage = "Ótima percepção! Em espaços compartilhados, o assento prioritário garante o conforto e a segurança de quem precisa. Estar atento ao redor é o primeiro passo da empatia.";
 
+        if (string.IsNullOrEmpty(errors[5].errorTitle))
+            errors[5].errorTitle = "Cuidado com o Ambiente";
         if (errors[5].errorMessage == "")
             errors[5].errorMessage = "Você encontrou! Manter nosso ambiente limpo torna o parque mais agradável para todos e demonstra nosso cuidado com o que é coletivo. Um pequeno gesto faz uma grande diferença.";
 
+        if (string.IsNullOrEmpty(errors[6].errorTitle))
+            errors[6].errorTitle = "Inclusão e Piso Tátil";
         if (errors[6].errorMessage == "")
             errors[6].errorMessage = "Exato! Para uma pessoa com deficiência visual, o piso tátil são os olhos que a guiam pelo caminho. Bloqueá-lo é como criar uma barreira invisível. Inclusão é garantir que todos os caminhos estejam abertos.";
 
@@ -99,6 +114,18 @@ public class SevenErrorsConfig : ScriptableObject
         if (string.IsNullOrEmpty(errors[4].errorName)) errors[4].errorName = "Uso indevido de assento prioritário";
         if (string.IsNullOrEmpty(errors[5].errorName)) errors[5].errorName = "Lixo jogado na rua";
         if (string.IsNullOrEmpty(errors[6].errorName)) errors[6].errorName = "Piso tátil bloqueado";
+    }
+
+    /// <summary>
+    /// Retorna o título do erro pelo índice
+    /// </summary>
+    public string GetErrorTitle(int index)
+    {
+        if (index >= 0 && index < errors.Length)
+        {
+            return errors[index].errorTitle;
+        }
+        return $"Erro {index + 1}";
     }
 
     /// <summary>
