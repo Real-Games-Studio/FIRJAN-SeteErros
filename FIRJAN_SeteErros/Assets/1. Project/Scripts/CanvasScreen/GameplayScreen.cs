@@ -606,7 +606,7 @@ public class GameplayScreen : CanvasScreen
     private void UpdateTimerUI()
     {
         UpdateTimerFill();
-        
+
         if (timerText != null)
         {
             int secondsRemaining = Mathf.CeilToInt(currentTime);
@@ -614,24 +614,24 @@ public class GameplayScreen : CanvasScreen
             timerText.text = $"{secondsRemaining}";
         }
     }
-    
+
     /// <summary>
     /// Atualiza o fill da imagem do timer
     /// </summary>
     private void UpdateTimerFill()
     {
         if (timerFillImage == null) return;
-        
+
         if (initialGameTime <= 0f)
         {
             timerFillImage.fillAmount = 0f;
             return;
         }
-        
+
         float normalizedTime = Mathf.Clamp01(currentTime / initialGameTime);
         timerFillImage.fillAmount = normalizedTime;
     }
-    
+
     /// <summary>
     /// Atualiza os indicadores visuais dos erros encontrados
     /// </summary>
