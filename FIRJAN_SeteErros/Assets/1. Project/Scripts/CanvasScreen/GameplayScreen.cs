@@ -484,13 +484,26 @@ public class GameplayScreen : CanvasScreen
 
     /// <summary>
     /// Mostra popup com mensagem educativa
+    /// Atualiza automaticamente se o idioma mudar enquanto o popup está aberto
     /// </summary>
     private void ShowErrorPopup(int errorIndex, System.Action onClosed = null)
     {
-        if (errorPopup != null)
+        if (errorPopup != null && gameConfig != null)
         {
-            string title = gameConfig != null ? gameConfig.GetErrorTitle(errorIndex) : "Erro Encontrado!";
-            string message = gameConfig != null ? gameConfig.GetErrorMessage(errorIndex) : "Erro encontrado!";
+            // Usa o novo método que suporta atualização automática de idioma
+            DisableAllButtons();
+
+            errorPopup.ShowPopupForError(gameConfig, errorIndex, () =>
+            {
+                EnableAllButtons();
+                onClosed?.Invoke();
+            });
+        }
+        else if (errorPopup != null)
+        {
+            // Fallback se não houver config
+            string title = "Erro Encontrado!";
+            string message = "Erro encontrado!";
             ShowBlockingPopup(title, message, onClosed);
         }
         else

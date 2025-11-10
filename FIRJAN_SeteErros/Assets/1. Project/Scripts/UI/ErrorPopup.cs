@@ -23,6 +23,11 @@ public class ErrorPopup : MonoBehaviour
     // Callback para quando o popup for fechado
     public System.Action OnPopupClosed;
 
+    // Armazena os dados do erro atual para atualizar quando o idioma mudar
+    private SevenErrorsConfig currentConfig;
+    private int currentErrorIndex = -1;
+    private bool isShowingError = false;
+
     private void Awake()
     {
         // Garante que os componentes estão configurados
@@ -45,13 +50,15 @@ public class ErrorPopup : MonoBehaviour
         if (canvasGroup != null)
         {
             canvasGroup.alpha = 0f;
-            canvasGroup.blocksRaycasts = false;
         }
 
         if (popupPanel != null)
         {
             popupPanel.localScale = Vector3.zero;
         }
+
+        // Inscreve no evento de mudança de idioma
+        LanguageManager.OnLanguageChanged += OnLanguageChanged;
     }
 
     /// <summary>
@@ -62,6 +69,11 @@ public class ErrorPopup : MonoBehaviour
     /// <param name="onClosed">Callback opcional para quando o popup for fechado</param>
     public void ShowPopup(string title, string message, System.Action onClosed = null)
     {
+        // Limpa dados de erro anterior
+        isShowingError = false;
+        currentConfig = null;
+        currentErrorIndex = -1;
+
         // Define o callback
         OnPopupClosed = onClosed;
 
@@ -82,6 +94,74 @@ public class ErrorPopup : MonoBehaviour
 
         // Inicia animação de entrada
         StartCoroutine(ShowAnimation());
+    }
+
+    /// <summary>
+    /// Mostra o popup usando o índice do erro e o SevenErrorsConfig
+    /// Busca automaticamente título e mensagem baseado no idioma atual
+    /// ATUALIZA AUTOMATICAMENTE quando o idioma muda
+    /// </summary>
+    /// <param name="config">Configuração do jogo</param>
+    /// <param name="errorIndex">Índice do erro (0-6)</param>
+    /// <param name="onClosed">Callback opcional para quando o popup for fechado</param>
+    public void ShowPopupForError(SevenErrorsConfig config, int errorIndex, System.Action onClosed = null)
+    {
+        if (config == null)
+        {
+            ShowPopup("Erro Encontrado!", "Erro encontrado!", onClosed);
+            return;
+        }
+
+        // Armazena os dados para poder atualizar quando o idioma mudar
+        currentConfig = config;
+        currentErrorIndex = errorIndex;
+        isShowingError = true;
+
+        // Define o callback
+        OnPopupClosed = onClosed;
+
+        // Atualiza os textos
+        UpdateErrorTexts();
+
+        // Ativa o popup
+        gameObject.SetActive(true);
+
+        // Inicia animação de entrada
+        StartCoroutine(ShowAnimation());
+    }
+
+    /// <summary>
+    /// Atualiza os textos do popup baseado no idioma atual
+    /// </summary>
+    private void UpdateErrorTexts()
+    {
+        if (!isShowingError || currentConfig == null || currentErrorIndex < 0)
+            return;
+
+        string title = currentConfig.GetErrorTitle(currentErrorIndex);
+        string message = currentConfig.GetErrorMessage(currentErrorIndex);
+
+        if (titleText != null)
+        {
+            titleText.text = title;
+        }
+
+        if (messageText != null)
+        {
+            messageText.text = message;
+        }
+    }
+
+    /// <summary>
+    /// Chamado quando o idioma muda
+    /// </summary>
+    private void OnLanguageChanged()
+    {
+        // Se o popup está mostrando um erro, atualiza os textos
+        if (gameObject.activeSelf && isShowingError)
+        {
+            UpdateErrorTexts();
+        }
     }
 
     /// <summary>
@@ -211,5 +291,8 @@ public class ErrorPopup : MonoBehaviour
         {
             closeButton.onClick.RemoveListener(ClosePopup);
         }
+
+        // Desinscreve do evento de mudança de idioma
+        LanguageManager.OnLanguageChanged -= OnLanguageChanged;
     }
 }

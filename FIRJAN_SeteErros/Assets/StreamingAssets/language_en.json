@@ -1,0 +1,50 @@
+{
+    "seven_errors": {
+        "error1Title": "Respect for Priority Queues",
+        "error1Message": "Exactly! Priority queues ensure access for those who need it most. Respecting them is a simple gesture of citizenship and empathy.",
+        "error1Name": "Priority queue ignored",
+        "error2Title": "Accessibility on Ramps",
+        "error2Message": "Well observed! For wheelchair users, the ramp is not an option, it's the only way through. Ensuring access is ensuring freedom for all.",
+        "error2Name": "Access ramp blocked",
+        "error3Title": "Emergency Safety",
+        "error3Message": "Perfect! In an emergency, every second counts and a clear path can save lives. Safety is a collective responsibility.",
+        "error3Name": "Emergency exit obstructed",
+        "error4Title": "Preferential Parking Spaces",
+        "error4Message": "That's right! Preferential parking spaces are not about privilege, they're about necessity. They reduce the distance for those who really need it. Respect is fundamental.",
+        "error4Name": "Preferential parking space improperly occupied",
+        "error5Title": "Priority Seats",
+        "error5Message": "Great insight! In shared spaces, the priority seat ensures comfort and safety for those who need it. Being aware of your surroundings is the first step of empathy.",
+        "error5Name": "Improper use of priority seat",
+        "error6Title": "Environmental Care",
+        "error6Message": "You found it! Keeping our environment clean makes the park more pleasant for everyone and shows our care for what is collective. A small gesture makes a big difference.",
+        "error6Name": "Litter thrown on the street",
+        "error7Title": "Inclusion and Tactile Paving",
+        "error7Message": "Exactly! For a visually impaired person, tactile paving are the eyes that guide them along the way. Blocking it is like creating an invisible barrier. Inclusion is ensuring all paths are open.",
+        "error7Name": "Tactile paving blocked",
+        "successMessage": "Congratulations! You found the 7 errors that will definitely not be repeated at the next event! The skill points have been credited to your card:",
+        "timeoutMessage": "Time's up! You didn't find all 7 errors. Take a deep breath, observe carefully, and try again.",
+        "maxWrongAttemptsMessage": "You didn't find all 7 errors. Take a deep breath, observe carefully, and try again."
+    },
+    "main_screen": {
+        "title": "<size=169.5>GAME</size> <size=105.1>of the</size><br><color=#FFA200><size=261.3>7 errors</size>",
+        "description": "We held an event that<br>received criticism for lack<br>of accessibility and respect.<br>Analyze the image and identify<br>the 7 mistakes made within<br>2 minutes.",
+        "btnStart": "START"
+    },
+    "final_screen": {
+        "title": "FINAL RESULT",
+        "containerTitle1": "EMPATHY",
+        "containerTitle2": "CREATIVITY",
+        "containerTitle3": "PROBLEM SOLVING",
+        "nfc": "bring your card closer",
+        "titleDescriptions": "Congratulations!",
+        "description": "Congratulations! You found the 7 errors that will definitely not be repeated at the next event! The skill points have been credited to your card:"
+    },
+    "header": {
+        "headerTitle": "// 7 ERRORS GAME"
+    },
+    "close_popup": {
+        "panelText": "do you want to exit<br>the game?",
+        "confirm": "YES",
+        "cancel": "NO"
+    }
+}

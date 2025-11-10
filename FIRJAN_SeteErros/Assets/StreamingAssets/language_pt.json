@@ -1,0 +1,50 @@
+{
+    "seven_errors": {
+        "error1Title": "Respeito às Filas Preferenciais",
+        "error1Message": "Exato! Filas preferenciais garantem o acesso de quem mais precisa. Respeitá-las é um gesto simples de cidadania e empatia.",
+        "error1Name": "Fila presencial ignorada",
+        "error2Title": "Acessibilidade em Rampas",
+        "error2Message": "Bem observado! Para quem usa cadeira de rodas, a rampa não é uma opção, é a única passagem. Garantir o acesso é garantir a liberdade de todos.",
+        "error2Name": "Rampa de acesso bloqueada",
+        "error3Title": "Segurança em Emergências",
+        "error3Message": "Perfeito! Em uma emergência, cada segundo conta e um caminho livre pode salvar vidas. Segurança é uma responsabilidade coletiva.",
+        "error3Name": "Saída de emergência obstruída",
+        "error4Title": "Vagas Preferenciais",
+        "error4Message": "Isso mesmo! Vagas preferenciais não são sobre privilégio, são sobre necessidade. Elas diminuem a distância para quem realmente precisa. Respeito é fundamental.",
+        "error4Name": "Vaga preferencial ocupada indevidamente",
+        "error5Title": "Assentos Prioritários",
+        "error5Message": "Ótima percepção! Em espaços compartilhados, o assento prioritário garante o conforto e a segurança de quem precisa. Estar atento ao redor é o primeiro passo da empatia.",
+        "error5Name": "Uso indevido de assento prioritário",
+        "error6Title": "Cuidado com o Ambiente",
+        "error6Message": "Você encontrou! Manter nosso ambiente limpo torna o parque mais agradável para todos e demonstra nosso cuidado com o que é coletivo. Um pequeno gesto faz uma grande diferença.",
+        "error6Name": "Lixo jogado na rua",
+        "error7Title": "Inclusão e Piso Tátil",
+        "error7Message": "Exato! Para uma pessoa com deficiência visual, o piso tátil são os olhos que a guiam pelo caminho. Bloqueá-lo é como criar uma barreira invisível. Inclusão é garantir que todos os caminhos estejam abertos.",
+        "error7Name": "Piso tátil bloqueado",
+        "successMessage": "Parabéns! Você encontrou os 7 erros que definitivamente não serão repetidos no próximo evento! Os pontos das habilidades foram creditados em seu cartão:",
+        "timeoutMessage": "Tempo esgotado! Você não encontrou todos os 7 erros. Respire fundo, observe com atenção e tente novamente.",
+        "maxWrongAttemptsMessage": "Você não encontrou todos os 7 erros. Respire fundo, observe com atenção e tente novamente."
+    },
+    "main_screen": {
+        "title": "<size=169.5>JOGO</size> <size=105.1>dos</size><br><color=#FFA200><size=261.3>7 erros</size>",
+        "description": "Fizemos um evento que<br>recebeu críticas por falta<br>de acessibilidade e respeito.<br>Analise a imagem e identifique<br>os 7 erros cometidos em até<br>2 minutos.",
+        "btnStart": "COMEÇAR"
+    },
+    "final_screen": {
+        "title": "RESULTADO FINAL",
+        "containerTitle1": "EMPATIA",
+        "containerTitle2": "CRIATIVIDADE",
+        "containerTitle3": "RESOLUÇÃO DE PROBLEMAS",
+        "nfc": "aproxime seu cartão",
+        "titleDescriptions": "Parabéns!",
+        "description": "Parabéns! Você encontrou os 7 erros que definitivamente não serão repetidos no próximo evento! Os pontos das habilidades foram creditados em seu cartão:"
+    },
+    "header": {
+        "headerTitle": "// JOGO DOS 7 ERROS"
+    },
+    "close_popup": {
+        "panelText": "deseja sair<br>do jogo?",
+        "confirm": "SIM",
+        "cancel": "NÃO"
+    }
+}

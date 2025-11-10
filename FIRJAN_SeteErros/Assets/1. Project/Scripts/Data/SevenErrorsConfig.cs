@@ -105,7 +105,7 @@ public class SevenErrorsConfig : ScriptableObject
             errors[6].errorTitle = "Inclusão e Piso Tátil";
         if (errors[6].errorMessage == "")
             errors[6].errorMessage = "Exato! Para uma pessoa com deficiência visual, o piso tátil são os olhos que a guiam pelo caminho. Bloqueá-lo é como criar uma barreira invisível. Inclusão é garantir que todos os caminhos estejam abertos.";
-
+        
         // Define nomes padrão dos erros
         if (string.IsNullOrEmpty(errors[0].errorName)) errors[0].errorName = "Fila presencial ignorada";
         if (string.IsNullOrEmpty(errors[1].errorName)) errors[1].errorName = "Rampa de acesso bloqueada";
@@ -115,12 +115,20 @@ public class SevenErrorsConfig : ScriptableObject
         if (string.IsNullOrEmpty(errors[5].errorName)) errors[5].errorName = "Lixo jogado na rua";
         if (string.IsNullOrEmpty(errors[6].errorName)) errors[6].errorName = "Piso tátil bloqueado";
     }
-
+    
     /// <summary>
     /// Retorna o título do erro pelo índice
+    /// Usa LanguageManager se disponível, senão usa os valores padrão
     /// </summary>
     public string GetErrorTitle(int index)
     {
+        // Tenta usar LanguageManager primeiro
+        if (LanguageManager.Instance != null)
+        {
+            return LanguageManager.Instance.GetErrorTitle(index);
+        }
+
+        // Fallback para valores padrão
         if (index >= 0 && index < errors.Length)
         {
             return errors[index].errorTitle;
@@ -130,9 +138,17 @@ public class SevenErrorsConfig : ScriptableObject
 
     /// <summary>
     /// Retorna a mensagem do erro pelo índice
+    /// Usa LanguageManager se disponível, senão usa os valores padrão
     /// </summary>
     public string GetErrorMessage(int index)
     {
+        // Tenta usar LanguageManager primeiro
+        if (LanguageManager.Instance != null)
+        {
+            return LanguageManager.Instance.GetErrorMessage(index);
+        }
+
+        // Fallback para valores padrão
         if (index >= 0 && index < errors.Length)
         {
             return errors[index].errorMessage;
@@ -142,9 +158,17 @@ public class SevenErrorsConfig : ScriptableObject
 
     /// <summary>
     /// Retorna o nome do erro pelo índice
+    /// Usa LanguageManager se disponível, senão usa os valores padrão
     /// </summary>
     public string GetErrorName(int index)
     {
+        // Tenta usar LanguageManager primeiro
+        if (LanguageManager.Instance != null)
+        {
+            return LanguageManager.Instance.GetErrorName(index);
+        }
+
+        // Fallback para valores padrão
         if (index >= 0 && index < errors.Length)
         {
             return errors[index].errorName;
@@ -183,9 +207,17 @@ public class SevenErrorsConfig : ScriptableObject
 
     /// <summary>
     /// Retorna a mensagem de resultado apropriada
+    /// Usa LanguageManager se disponível, senão usa os valores padrão
     /// </summary>
     public string GetResultMessage(bool completedAllErrors, bool maxWrongAttemptsReached)
     {
+        // Tenta usar LanguageManager primeiro
+        if (LanguageManager.Instance != null)
+        {
+            return LanguageManager.Instance.GetResultMessage(completedAllErrors, maxWrongAttemptsReached);
+        }
+
+        // Fallback para valores padrão
         if (completedAllErrors)
         {
             return successMessage;
