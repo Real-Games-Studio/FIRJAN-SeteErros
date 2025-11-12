@@ -13,7 +13,8 @@ using UnityEngine.SceneManagement;
 public class ResultsScreen : CanvasScreen
 {
     [Header("UI Elements")]
-    [SerializeField] private TextMeshProUGUI resultMessageText;
+    [SerializeField] private TextMeshProUGUI resultTitleText; // Título "Parabéns!" / "Obrigado!"
+    [SerializeField] private TextMeshProUGUI resultMessageText; // Descrição longa
     [SerializeField] private TextMeshProUGUI errorsFoundText;
     [SerializeField] private TextMeshProUGUI timeRemainingText;
     [SerializeField] private TextMeshProUGUI nfcStatusText;
@@ -27,6 +28,12 @@ public class ResultsScreen : CanvasScreen
     [SerializeField] private float fillDelay = 0.5f; // delay entre o preenchimento das barras
     [SerializeField] private float fillSpeed = 0.1f; // velocidade de preenchimento por segmento
 
+    [Header("Score Scaling")]
+    [Tooltip("Pontuação máxima possível para cada habilidade (usado para calcular proporção)")]
+    [SerializeField] private int maxScoreValue = 8;
+    [Tooltip("Número de segmentos na barra (deve corresponder ao número de segmentos nas SegmentedBars)")]
+    [SerializeField] private int barSegments = 22;
+
     [Header("Auto Restart Timer")]
     [SerializeField] private TextMeshProUGUI timerText; // mesmo timer do gameplay
     [SerializeField] private Image timerFillImage;      // mesmo fill do gameplay
@@ -35,19 +42,37 @@ public class ResultsScreen : CanvasScreen
     [Header("Buttons")]
     [SerializeField] private Button playAgainButton;
     [SerializeField] private Button backToMenuButton;
+    [SerializeField] private Button finishButton; // Botão que aparece após leitura do NFC
 
     [Header("Conditional Elements")]
     [SerializeField] private GameObject scorePanel; // Painel de pontuação (só aparece se completou)
     [SerializeField] private GameObject timeoutPanel; // Painel de timeout (só aparece se não completou)
+
+    [Header("Songs")]
+    [SerializeField] private AudioSource endSong;
+    [SerializeField] private AudioSource nfcSong;
+
+    [Header("NFC Feedback")]
+    [Tooltip("GameObject que será desligado quando o NFC for lido")]
+    [SerializeField] private GameObject objectToDisableOnNFC;
 
     // Auto restart timer control
     private float currentTime;
     private float initialTime;
     private bool timerActive = false;
 
+    // Estado pós-NFC (para manter após troca de idioma)
+    private bool nfcDataReceived = false;
+
     public override void OnEnable()
     {
         base.OnEnable();
+
+        // Tenta registrar o listener do NFC
+        TryRegisterNFCListener();
+
+        // Registra listener de mudança de idioma
+        LanguageManager.OnLanguageChanged += OnLanguageChanged;
 
         // Configura botões
         if (playAgainButton != null)
@@ -59,11 +84,69 @@ public class ResultsScreen : CanvasScreen
         {
             backToMenuButton.onClick.AddListener(BackToMenu);
         }
+
+        if (finishButton != null)
+        {
+            finishButton.onClick.AddListener(BackToMenu);
+            finishButton.gameObject.SetActive(false); // Inicia desligado
+        }
+    }
+
+    /// <summary>
+    /// Tenta registrar o listener do NFC (chama novamente se necessário)
+    /// </summary>
+    private void TryRegisterNFCListener()
+    {
+        if (NFCGameService.Instance != null)
+        {
+            // Remove listener anterior se existir (evita duplicatas)
+            NFCGameService.Instance.OnNfcDataUpdated -= OnNfcDataReceived;
+            // Adiciona o listener
+            NFCGameService.Instance.OnNfcDataUpdated += OnNfcDataReceived;
+            Debug.Log("[ResultsScreen] Listener OnNfcDataUpdated registrado com sucesso");
+        }
+        else
+        {
+            Debug.LogWarning("[ResultsScreen] NFCGameService.Instance é nulo! Tentando novamente...");
+            // Tenta novamente após um frame
+            StartCoroutine(RetryRegisterNFCListener());
+        }
+    }
+
+    /// <summary>
+    /// Retry para registrar o listener se o NFCGameService ainda não estiver pronto
+    /// </summary>
+    private System.Collections.IEnumerator RetryRegisterNFCListener()
+    {
+        // Espera até 10 frames ou até o serviço estar disponível
+        for (int i = 0; i < 10; i++)
+        {
+            yield return null; // Espera um frame
+
+            if (NFCGameService.Instance != null)
+            {
+                NFCGameService.Instance.OnNfcDataUpdated -= OnNfcDataReceived;
+                NFCGameService.Instance.OnNfcDataUpdated += OnNfcDataReceived;
+                Debug.Log($"[ResultsScreen] Listener OnNfcDataUpdated registrado com sucesso após {i + 1} tentativa(s)");
+                yield break;
+            }
+        }
+
+        Debug.LogError("[ResultsScreen] NFCGameService.Instance ainda é nulo após várias tentativas! Evento NFC não será escutado.");
     }
 
     public override void OnDisable()
     {
         base.OnDisable();
+
+        // Remove listener do NFC
+        if (NFCGameService.Instance != null)
+        {
+            NFCGameService.Instance.OnNfcDataUpdated -= OnNfcDataReceived;
+        }
+
+        // Remove listener de mudança de idioma
+        LanguageManager.OnLanguageChanged -= OnLanguageChanged;
 
         // Remove listeners dos botões
         if (playAgainButton != null)
@@ -75,6 +158,11 @@ public class ResultsScreen : CanvasScreen
         {
             backToMenuButton.onClick.RemoveListener(BackToMenu);
         }
+
+        if (finishButton != null)
+        {
+            finishButton.onClick.RemoveListener(BackToMenu);
+        }
     }
 
     private void Update()
@@ -83,6 +171,14 @@ public class ResultsScreen : CanvasScreen
         {
             HandleAutoRestartTimer();
         }
+
+#if UNITY_EDITOR
+        // Debug: Pressione N para simular leitura NFC e POST de dados
+        if (Input.GetKeyDown(KeyCode.N))
+        {
+            SimulateNFCReadAndPost();
+        }
+#endif
     }
 
     public override void TurnOn()
@@ -90,6 +186,7 @@ public class ResultsScreen : CanvasScreen
         base.TurnOn();
         DisplayResults();
         StartAutoRestartTimer();
+        endSong?.Play();
     }
 
     /// <summary>
@@ -100,6 +197,15 @@ public class ResultsScreen : CanvasScreen
         // Obtém dados do resultado
         ScoreData score = GameResultData.GetScore();
         string resultMessage = GameResultData.GetResultMessage();
+
+        // Define o título baseado no resultado (Parabéns! ou Que pena!)
+        if (resultTitleText != null && LanguageManager.Instance != null)
+        {
+            string title = GameResultData.completedAllErrors
+                ? LanguageManager.Instance.GetSuccessTitle()
+                : LanguageManager.Instance.GetFailureTitle();
+            resultTitleText.text = title;
+        }
 
         // Exibe mensagem principal
         if (resultMessageText != null)
@@ -293,25 +399,55 @@ public class ResultsScreen : CanvasScreen
         // Delay inicial
         yield return new WaitForSeconds(fillDelay);
 
+        // Converte pontuações para segmentos proporcionais
+        int empatiaSegments = ConvertScoreToSegments(score.empatia);
+        int criatividadeSegments = ConvertScoreToSegments(score.criatividade);
+        int resolucaoSegments = ConvertScoreToSegments(score.resolucaoProblemas);
+
         // Anima Empatia
         if (empatiaBar != null)
         {
-            yield return StartCoroutine(AnimateBar(empatiaBar, score.empatia));
+            yield return StartCoroutine(AnimateBar(empatiaBar, empatiaSegments));
             yield return new WaitForSeconds(fillDelay);
         }
 
         // Anima Criatividade
         if (criatividadeBar != null)
         {
-            yield return StartCoroutine(AnimateBar(criatividadeBar, score.criatividade));
+            yield return StartCoroutine(AnimateBar(criatividadeBar, criatividadeSegments));
             yield return new WaitForSeconds(fillDelay);
         }
 
         // Anima Resolução de Problemas
         if (resolucaoProblemasBar != null)
         {
-            yield return StartCoroutine(AnimateBar(resolucaoProblemasBar, score.resolucaoProblemas));
+            yield return StartCoroutine(AnimateBar(resolucaoProblemasBar, resolucaoSegments));
         }
+    }
+
+    /// <summary>
+    /// Converte uma pontuação em número de segmentos proporcionalmente
+    /// Calcula baseado no valor individual da habilidade, não nos erros totais
+    /// </summary>
+    private int ConvertScoreToSegments(int scoreValue)
+    {
+        if (maxScoreValue <= 0) return 0;
+
+        // Calcula proporção baseada no valor INDIVIDUAL da habilidade
+        // Se atingiu o valor máximo individual (8), retorna o máximo de segmentos (22)
+        if (scoreValue >= maxScoreValue)
+        {
+            return barSegments;
+        }
+
+        // Calcula proporção exata do valor individual
+        float proportion = (float)scoreValue / maxScoreValue;
+
+        // Multiplica pela quantidade de segmentos e arredonda
+        int segments = Mathf.RoundToInt(proportion * barSegments);
+
+        // Garante que fica dentro dos limites
+        return Mathf.Clamp(segments, 0, barSegments);
     }
 
     /// <summary>
@@ -320,7 +456,7 @@ public class ResultsScreen : CanvasScreen
     private System.Collections.IEnumerator AnimateBar(SegmentedBar bar, int targetValue)
     {
         int currentValue = 0;
-        
+
         while (currentValue < targetValue)
         {
             currentValue++;
@@ -373,4 +509,224 @@ public class ResultsScreen : CanvasScreen
 
         nfcStatusText.text = builder.ToString();
     }
+
+    /// <summary>
+    /// Callback quando os dados NFC são atualizados após POST bem-sucedido
+    /// </summary>
+    private void OnNfcDataReceived(EndGameResponseModel response)
+    {
+        Debug.Log($"[ResultsScreen] OnNfcDataReceived chamado! Response: {response?.nfcId ?? "null"}");
+
+        // Marca que os dados NFC foram recebidos
+        nfcDataReceived = true;
+
+        // Toca o som quando os dados NFC são atualizados (após POST bem-sucedido)
+        if (nfcSong != null)
+        {
+            nfcSong.Play();
+            Debug.Log("[ResultsScreen] Som NFC tocado");
+        }
+        else
+        {
+            Debug.LogWarning("[ResultsScreen] nfcSong é nulo!");
+        }
+
+        // Atualiza a UI com os novos dados
+        UpdateNfcStatus();
+
+        // Desliga o GameObject configurado (se houver)
+        if (objectToDisableOnNFC != null)
+        {
+            objectToDisableOnNFC.SetActive(false);
+            Debug.Log($"[ResultsScreen] GameObject '{objectToDisableOnNFC.name}' desligado");
+        }
+        else
+        {
+            Debug.LogWarning("[ResultsScreen] objectToDisableOnNFC não está configurado");
+        }
+
+        // Aplica o estado pós-NFC
+        ApplyPostNfcState();
+    }
+
+    /// <summary>
+    /// Aplica o estado visual pós-NFC (Obrigado + botão Finalizar)
+    /// </summary>
+    private void ApplyPostNfcState()
+    {
+        // Troca o TÍTULO para "Obrigado!" / "Thank you!"
+        if (resultTitleText != null && LanguageManager.Instance != null)
+        {
+            string thanksMsg = LanguageManager.Instance.GetThanksMessage();
+            resultTitleText.text = thanksMsg;
+            Debug.Log($"[ResultsScreen] Título alterado para: {thanksMsg}");
+        }
+        else
+        {
+            Debug.LogWarning($"[ResultsScreen] resultTitleText={resultTitleText != null}, LanguageManager={LanguageManager.Instance != null}");
+        }
+
+        // Limpa o texto da descrição longa
+        if (resultMessageText != null)
+        {
+            resultMessageText.text = "";
+            Debug.Log("[ResultsScreen] Texto da descrição limpo");
+        }
+        else
+        {
+            Debug.LogWarning("[ResultsScreen] resultMessageText é nulo!");
+        }
+
+        // Ativa o botão "Finalizar" e atualiza seu texto
+        if (finishButton != null)
+        {
+            finishButton.gameObject.SetActive(true);
+
+            // Atualiza o texto do botão com a tradução
+            if (LanguageManager.Instance != null)
+            {
+                TextMeshProUGUI buttonText = finishButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (buttonText != null)
+                {
+                    buttonText.text = LanguageManager.Instance.GetFinishButtonText();
+                    Debug.Log($"[ResultsScreen] Texto do botão Finalizar atualizado para: {buttonText.text}");
+                }
+            }
+
+            Debug.Log("[ResultsScreen] Botão Finalizar ativado");
+        }
+        else
+        {
+            Debug.LogWarning("[ResultsScreen] finishButton não está configurado");
+        }
+    }
+
+    /// <summary>
+    /// Callback quando o idioma é alterado
+    /// </summary>
+    private void OnLanguageChanged()
+    {
+        Debug.Log($"[ResultsScreen] Idioma alterado. nfcDataReceived={nfcDataReceived}");
+
+        // Se os dados NFC já foram recebidos, reaplica o estado pós-NFC
+        if (nfcDataReceived)
+        {
+            // Aguarda um frame para garantir que LocalizedText atualizou primeiro
+            StartCoroutine(ReapplyPostNfcStateAfterLanguageChange());
+        }
+        else
+        {
+            // Se ainda não recebeu NFC, atualiza a mensagem de resultado normalmente
+            StartCoroutine(UpdateResultMessageAfterLanguageChange());
+        }
+    }
+
+    /// <summary>
+    /// Reaplica o estado pós-NFC após troca de idioma
+    /// </summary>
+    private System.Collections.IEnumerator ReapplyPostNfcStateAfterLanguageChange()
+    {
+        // Aguarda LocalizedText atualizar
+        yield return null;
+
+        // Reaplica o estado pós-NFC com o novo idioma
+        ApplyPostNfcState();
+
+        Debug.Log("[ResultsScreen] Estado pós-NFC reaplicado após mudança de idioma");
+    }
+
+    /// <summary>
+    /// Atualiza a mensagem de resultado após troca de idioma
+    /// (apenas quando NÃO estiver no estado pós-NFC)
+    /// </summary>
+    private System.Collections.IEnumerator UpdateResultMessageAfterLanguageChange()
+    {
+        // Aguarda LocalizedText atualizar
+        yield return null;
+
+        // Atualiza o título baseado no resultado (Parabéns! ou Que pena!)
+        if (resultTitleText != null && LanguageManager.Instance != null)
+        {
+            string title = GameResultData.completedAllErrors
+                ? LanguageManager.Instance.GetSuccessTitle()
+                : LanguageManager.Instance.GetFailureTitle();
+            resultTitleText.text = title;
+            Debug.Log($"[ResultsScreen] Título atualizado após mudança de idioma: {title}");
+        }
+
+        // Atualiza a mensagem de resultado com o novo idioma
+        if (resultMessageText != null)
+        {
+            string resultMessage = GameResultData.GetResultMessage();
+            resultMessageText.text = resultMessage;
+            Debug.Log($"[ResultsScreen] Mensagem de resultado atualizada após mudança de idioma: {resultMessage}");
+        }
+
+        Debug.Log("[ResultsScreen] Título e mensagem de resultado atualizados após mudança de idioma");
+    }
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// [DEBUG ONLY] Simula a leitura do cartão NFC e o processo completo de POST
+    /// Pressione N na tela de resultados para testar
+    /// </summary>
+    private void SimulateNFCReadAndPost()
+    {
+        Debug.Log("[DEBUG] Simulando leitura NFC e POST de dados...");
+
+        // Marca que os dados NFC foram recebidos
+        nfcDataReceived = true;
+
+        // Simula dados do cartão NFC
+        string fakeCardId = "DEBUG_CARD_" + System.DateTime.Now.Ticks;
+
+        // Cria resposta simulada com os totais acumulados
+        ScoreData currentScore = GameResultData.GetScore();
+
+        EndGameResponseModel fakeResponse = new EndGameResponseModel
+        {
+            nfcId = fakeCardId,
+            attributes = new EndGameResponseModel.Attributes
+            {
+                empathy = currentScore.empatia * 3,        // Simula acumulado (3x o valor atual)
+                creativity = currentScore.criatividade * 3,
+                problem_solving = currentScore.resolucaoProblemas * 3
+            }
+        };
+
+        // Atualiza o texto do NFC com dados simulados
+        if (nfcStatusText != null)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine($"[DEBUG] Cartão: {fakeCardId}");
+            builder.AppendLine($"Leitor: DEBUG_READER");
+            builder.AppendLine($"Empatia total: {fakeResponse.attributes.empathy}");
+            builder.AppendLine($"Criatividade total: {fakeResponse.attributes.creativity}");
+            builder.AppendLine($"Resolução total: {fakeResponse.attributes.problem_solving}");
+            builder.AppendLine("");
+            builder.AppendLine($"[Pontuação desta partida]");
+            builder.AppendLine($"Empatia: +{currentScore.empatia}");
+            builder.AppendLine($"Criatividade: +{currentScore.criatividade}");
+            builder.AppendLine($"Resolução: +{currentScore.resolucaoProblemas}");
+
+            nfcStatusText.text = builder.ToString();
+        }
+
+        // Toca o som do NFC para simular o feedback
+        nfcSong?.Play();
+
+        // Desliga o GameObject configurado (se houver)
+        if (objectToDisableOnNFC != null)
+        {
+            objectToDisableOnNFC.SetActive(false);
+            Debug.Log($"[DEBUG] GameObject '{objectToDisableOnNFC.name}' desligado");
+        }
+
+        // Aplica o estado pós-NFC
+        ApplyPostNfcState();
+
+        Debug.Log($"[DEBUG] NFC simulado com sucesso! Card: {fakeCardId}");
+        Debug.Log($"[DEBUG] Totais simulados - Empatia: {fakeResponse.attributes.empathy}, Criatividade: {fakeResponse.attributes.creativity}, Resolução: {fakeResponse.attributes.problem_solving}");
+    }
+#endif
 }

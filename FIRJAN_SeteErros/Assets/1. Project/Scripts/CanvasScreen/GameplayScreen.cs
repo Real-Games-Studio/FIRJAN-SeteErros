@@ -589,10 +589,14 @@ public class GameplayScreen : CanvasScreen
         SubmitNfcScore();
 
         // Mostra popup com mensagem de tentativas esgotadas
-        if (gameConfig != null)
+        if (errorPopup != null && gameConfig != null)
         {
-            ShowBlockingPopup("Tentativas Esgotadas", gameConfig.maxWrongAttemptsMessage, () =>
+            DisableAllButtons();
+
+            // Usa o novo método que suporta atualização automática de idioma
+            errorPopup.ShowPopupForResult(gameConfig, false, true, () =>
             {
+                EnableAllButtons();
                 // Quando o popup for fechado, vai para a tela de resultados
                 CallNextScreen();
             });

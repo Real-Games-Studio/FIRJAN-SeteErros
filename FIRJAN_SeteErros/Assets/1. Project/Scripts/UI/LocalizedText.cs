@@ -47,7 +47,9 @@ public class LocalizedText : MonoBehaviour
         FinalScreenContainerTitle3,
         FinalScreenNfc,
         FinalScreenTitleDescriptions,
+        FinalScreenTitleFailure,
         FinalScreenDescription,
+        FinalScreenFinishButton,
         // Header
         HeaderTitle,
         // Close Popup
@@ -160,7 +162,9 @@ public class LocalizedText : MonoBehaviour
             case TextType.FinalScreenContainerTitle3: return data.final_screen?.containerTitle3 ?? textComponent.text;
             case TextType.FinalScreenNfc: return data.final_screen?.nfc ?? textComponent.text;
             case TextType.FinalScreenTitleDescriptions: return data.final_screen?.titleDescriptions ?? textComponent.text;
+            case TextType.FinalScreenTitleFailure: return data.final_screen?.titleFailure ?? textComponent.text;
             case TextType.FinalScreenDescription: return data.final_screen?.description ?? textComponent.text;
+            case TextType.FinalScreenFinishButton: return data.final_screen?.finishButton ?? textComponent.text;
 
             // Header
             case TextType.HeaderTitle: return data.header?.headerTitle ?? textComponent.text;

@@ -1,9 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor;
 using TMPro;
 using RealGames;
+using UnityEngine.SceneManagement;
 public class ScreenCanvasController : MonoBehaviour
 {
     public static ScreenCanvasController instance;
@@ -63,7 +61,8 @@ public class ScreenCanvasController : MonoBehaviour
     {
         Debug.Log("Tempo de inatividade extrapolado!");
         inactiveTimer = 0;
-        ScreenManager.CallScreen(inicialScreen);
+        // ScreenManager.CallScreen(inicialScreen);
+        SceneManager.LoadScene(0);
     }
     public void OnScreenCall(string name)
     {

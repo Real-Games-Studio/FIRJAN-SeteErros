@@ -1,8 +1,11 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using _4._NFC_Firjan.Scripts.NFC;
 using _4._NFC_Firjan.Scripts.Server;
@@ -47,6 +50,10 @@ public class NFCGameService : MonoBehaviour
     public EndGameResponseModel LastResponse { get; private set; }
     public ScoreData LastScoreSent { get; private set; }
 
+    // Fila para executar ações na main thread
+    private readonly Queue<System.Action> mainThreadQueue = new Queue<System.Action>();
+    private readonly object queueLock = new object();
+
     // Dados pendentes para envio quando cartão for conectado
     private ScoreData? pendingScore;
     private bool pendingCompletedAllErrors;
@@ -61,7 +68,7 @@ public class NFCGameService : MonoBehaviour
     public event Action<string> OnNfcCardConnected;
     public event Action OnNfcCardDisconnected;
     public event Action<EndGameResponseModel> OnNfcDataUpdated;
-
+    
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -119,11 +126,35 @@ public class NFCGameService : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        // Processa ações pendentes na main thread
+        lock (queueLock)
+        {
+            while (mainThreadQueue.Count > 0)
+            {
+                var action = mainThreadQueue.Dequeue();
+                action?.Invoke();
+            }
+        }
+    }
+
     private void OnDestroy()
     {
         if (Instance == this)
         {
             Instance = null;
+        }
+    }
+
+    /// <summary>
+    /// Enfileira uma ação para ser executada na main thread do Unity
+    /// </summary>
+    private void ExecuteOnMainThread(System.Action action)
+    {
+        lock (queueLock)
+        {
+            mainThreadQueue.Enqueue(action);
         }
     }
 
@@ -269,7 +300,15 @@ public class NFCGameService : MonoBehaviour
             if (response != null)
             {
                 LastResponse = response;
-                OnNfcDataUpdated?.Invoke(response);
+
+                // Invoca o evento na thread principal do Unity usando a fila
+                if (OnNfcDataUpdated != null)
+                {
+                    // Salva a resposta localmente para usar no callback da main thread
+                    EndGameResponseModel responseForCallback = response;
+                    ExecuteOnMainThread(() => OnNfcDataUpdated?.Invoke(responseForCallback));
+                }
+
                 Debug.Log($"[NFC] Dados do cartão atualizados para {CurrentNfcId}: {response.ToString()}");
             }
             else
@@ -452,7 +491,7 @@ public class NFCGameService : MonoBehaviour
                     string responseBody = await response.Content.ReadAsStringAsync();
                     Debug.LogError($"[NFC] Erro na resposta: {responseBody}");
                 }
-
+                
                 return response.StatusCode;
             }
         }

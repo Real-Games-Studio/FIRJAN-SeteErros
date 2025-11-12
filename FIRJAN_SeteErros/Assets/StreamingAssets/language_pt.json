@@ -35,9 +35,12 @@
         "containerTitle1": "EMPATIA",
         "containerTitle2": "CRIATIVIDADE",
         "containerTitle3": "RESOLUÇÃO DE PROBLEMAS",
-        "nfc": "aproxime seu cartão",
+        "nfc": "Aproxime seu cartão",
         "titleDescriptions": "Parabéns!",
-        "description": "Parabéns! Você encontrou os 7 erros que definitivamente não serão repetidos no próximo evento! Os pontos das habilidades foram creditados em seu cartão:"
+        "titleFailure": "Que pena!",
+        "description": "Parabéns! Você encontrou os 7 erros que definitivamente não serão repetidos no próximo evento! Os pontos das habilidades foram creditados em seu cartão:",
+        "thanksMsg": "Obrigado!",
+        "finishButton": "Finalizar"
     },
     "header": {
         "headerTitle": "// JOGO DOS 7 ERROS"

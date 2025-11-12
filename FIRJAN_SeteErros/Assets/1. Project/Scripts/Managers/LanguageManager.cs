@@ -73,8 +73,11 @@ public class LanguageManager : MonoBehaviour
         public string containerTitle2;
         public string containerTitle3;
         public string nfc;
-        public string titleDescriptions;
+        public string titleDescriptions; // Título quando completou (Parabéns!)
+        public string titleFailure; // Título quando não completou (Que pena!)
         public string description;
+        public string thanksMsg; // Mensagem de agradecimento após leitura NFC
+        public string finishButton; // Texto do botão Finalizar
     }
 
     [System.Serializable]
@@ -119,7 +122,6 @@ public class LanguageManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
         }
         else
         {
@@ -323,5 +325,41 @@ public class LanguageManager : MonoBehaviour
         {
             return currentData.seven_errors.timeoutMessage;
         }
+    }
+
+    /// <summary>
+    /// Retorna a mensagem de agradecimento (após leitura NFC)
+    /// </summary>
+    public string GetThanksMessage()
+    {
+        if (currentData?.final_screen == null) return "Obrigado!";
+        return currentData.final_screen.thanksMsg;
+    }
+
+    /// <summary>
+    /// Retorna o texto do botão Finalizar
+    /// </summary>
+    public string GetFinishButtonText()
+    {
+        if (currentData?.final_screen == null) return "Finalizar";
+        return currentData.final_screen.finishButton;
+    }
+
+    /// <summary>
+    /// Retorna o título de sucesso (Parabéns!)
+    /// </summary>
+    public string GetSuccessTitle()
+    {
+        if (currentData?.final_screen == null) return "Parabéns!";
+        return currentData.final_screen.titleDescriptions;
+    }
+
+    /// <summary>
+    /// Retorna o título de falha (Que pena!)
+    /// </summary>
+    public string GetFailureTitle()
+    {
+        if (currentData?.final_screen == null) return "Que pena!";
+        return currentData.final_screen.titleFailure;
     }
 }

@@ -35,9 +35,12 @@
         "containerTitle1": "EMPATHY",
         "containerTitle2": "CREATIVITY",
         "containerTitle3": "PROBLEM SOLVING",
-        "nfc": "bring your card closer",
+        "nfc": "Bring your card closer",
         "titleDescriptions": "Congratulations!",
-        "description": "Congratulations! You found the 7 errors that will definitely not be repeated at the next event! The skill points have been credited to your card:"
+        "titleFailure": "Too bad!",
+        "description": "Congratulations! You found the 7 errors that will definitely not be repeated at the next event! The skill points have been credited to your card:",
+        "thanksMsg": "Thank you!",
+        "finishButton": "Finish"
     },
     "header": {
         "headerTitle": "// 7 ERRORS GAME"

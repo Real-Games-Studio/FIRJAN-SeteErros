@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 48276e73fa3db7a46892258efbd7a2d1, type: 3}
   m_Name: SevenErrorsConfig
   m_EditorClassIdentifier: 
-  gameTimeInSeconds: 120
+  gameTimeInSeconds: 180
   totalErrors: 7
   maxWrongAttempts: 3
   redTintIntensity: 0.3

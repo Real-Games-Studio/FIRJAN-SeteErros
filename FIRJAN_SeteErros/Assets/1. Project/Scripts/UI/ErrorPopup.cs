@@ -28,6 +28,11 @@ public class ErrorPopup : MonoBehaviour
     private int currentErrorIndex = -1;
     private bool isShowingError = false;
 
+    // Armazena os dados da mensagem de resultado para atualizar quando o idioma mudar
+    private bool isShowingResultMessage = false;
+    private bool isCompletedAllErrors = false;
+    private bool isMaxWrongAttemptsReached = false;
+
     private void Awake()
     {
         // Garante que os componentes estão configurados
@@ -36,6 +41,18 @@ public class ErrorPopup : MonoBehaviour
 
         if (popupPanel == null)
             popupPanel = GetComponent<RectTransform>();
+    }
+
+    private void OnEnable()
+    {
+        // Inscreve no evento de mudança de idioma sempre que o popup é ativado
+        LanguageManager.OnLanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnDisable()
+    {
+        // Remove o listener quando o popup é desativado
+        LanguageManager.OnLanguageChanged -= OnLanguageChanged;
     }
 
     private void Start()
@@ -56,9 +73,6 @@ public class ErrorPopup : MonoBehaviour
         {
             popupPanel.localScale = Vector3.zero;
         }
-
-        // Inscreve no evento de mudança de idioma
-        LanguageManager.OnLanguageChanged += OnLanguageChanged;
     }
 
     /// <summary>
@@ -73,6 +87,7 @@ public class ErrorPopup : MonoBehaviour
         isShowingError = false;
         currentConfig = null;
         currentErrorIndex = -1;
+        isShowingResultMessage = false;
 
         // Define o callback
         OnPopupClosed = onClosed;
@@ -112,6 +127,9 @@ public class ErrorPopup : MonoBehaviour
             return;
         }
 
+        // Limpa dados de mensagem de resultado
+        isShowingResultMessage = false;
+
         // Armazena os dados para poder atualizar quando o idioma mudar
         currentConfig = config;
         currentErrorIndex = errorIndex;
@@ -122,6 +140,47 @@ public class ErrorPopup : MonoBehaviour
 
         // Atualiza os textos
         UpdateErrorTexts();
+
+        // Ativa o popup
+        gameObject.SetActive(true);
+
+        // Inicia animação de entrada
+        StartCoroutine(ShowAnimation());
+    }
+
+    /// <summary>
+    /// Mostra o popup com mensagem de resultado (timeout ou max wrong attempts)
+    /// Busca automaticamente título e mensagem do SevenErrorsConfig baseado no idioma atual
+    /// ATUALIZA AUTOMATICAMENTE quando o idioma muda
+    /// </summary>
+    /// <param name="config">Configuração do jogo</param>
+    /// <param name="completedAllErrors">Se completou todos os erros</param>
+    /// <param name="maxWrongAttemptsReached">Se atingiu o máximo de tentativas erradas</param>
+    /// <param name="onClosed">Callback opcional para quando o popup for fechado</param>
+    public void ShowPopupForResult(SevenErrorsConfig config, bool completedAllErrors, bool maxWrongAttemptsReached, System.Action onClosed = null)
+    {
+        if (config == null)
+        {
+            ShowPopup("Fim de Jogo", "O jogo terminou.", onClosed);
+            return;
+        }
+
+        // Limpa dados de erro anterior
+        isShowingError = false;
+        currentConfig = null;
+        currentErrorIndex = -1;
+
+        // Armazena os dados para poder atualizar quando o idioma mudar
+        currentConfig = config;
+        isShowingResultMessage = true;
+        isCompletedAllErrors = completedAllErrors;
+        isMaxWrongAttemptsReached = maxWrongAttemptsReached;
+
+        // Define o callback
+        OnPopupClosed = onClosed;
+
+        // Atualiza os textos
+        UpdateResultTexts();
 
         // Ativa o popup
         gameObject.SetActive(true);
@@ -153,14 +212,83 @@ public class ErrorPopup : MonoBehaviour
     }
 
     /// <summary>
+    /// Atualiza os textos de resultado do popup baseado no idioma atual
+    /// </summary>
+    private void UpdateResultTexts()
+    {
+        if (!isShowingResultMessage || currentConfig == null)
+            return;
+
+        // Define título baseado no tipo de resultado
+        string title;
+        if (isMaxWrongAttemptsReached)
+        {
+            // Busca título traduzido para "Tentativas Esgotadas"
+            title = GetMaxAttemptsTitle();
+        }
+        else
+        {
+            // Para timeout ou outros casos
+            title = GetTimeoutTitle();
+        }
+
+        string message = currentConfig.GetResultMessage(isCompletedAllErrors, isMaxWrongAttemptsReached);
+
+        if (titleText != null)
+        {
+            titleText.text = title;
+        }
+
+        if (messageText != null)
+        {
+            messageText.text = message;
+        }
+    }
+
+    /// <summary>
+    /// Retorna o título traduzido para "Tentativas Esgotadas"
+    /// </summary>
+    private string GetMaxAttemptsTitle()
+    {
+        // Você pode adicionar essas chaves no JSON se quiser
+        // Por enquanto, vamos usar valores hardcoded que mudam com o idioma
+        if (LanguageManager.Instance != null)
+        {
+            var lang = LanguageManager.Instance.GetCurrentLanguage();
+            return lang == LanguageManager.Language.Portuguese ? "Tentativas Esgotadas" : "Attempts Exhausted";
+        }
+        return "Tentativas Esgotadas";
+    }
+
+    /// <summary>
+    /// Retorna o título traduzido para "Tempo Esgotado"
+    /// </summary>
+    private string GetTimeoutTitle()
+    {
+        if (LanguageManager.Instance != null)
+        {
+            var lang = LanguageManager.Instance.GetCurrentLanguage();
+            return lang == LanguageManager.Language.Portuguese ? "Tempo Esgotado" : "Time's Up";
+        }
+        return "Tempo Esgotado";
+    }
+
+    /// <summary>
     /// Chamado quando o idioma muda
     /// </summary>
     private void OnLanguageChanged()
     {
         // Se o popup está mostrando um erro, atualiza os textos
-        if (gameObject.activeSelf && isShowingError)
+        if (gameObject.activeSelf)
         {
-            UpdateErrorTexts();
+            if (isShowingError)
+            {
+                UpdateErrorTexts();
+            }
+            else if (isShowingResultMessage)
+            {
+                UpdateResultTexts();
+            }
         }
     }
 
@@ -291,8 +419,5 @@ public class ErrorPopup : MonoBehaviour
         {
             closeButton.onClick.RemoveListener(ClosePopup);
         }
-
-        // Desinscreve do evento de mudança de idioma
-        LanguageManager.OnLanguageChanged -= OnLanguageChanged;
     }
 }

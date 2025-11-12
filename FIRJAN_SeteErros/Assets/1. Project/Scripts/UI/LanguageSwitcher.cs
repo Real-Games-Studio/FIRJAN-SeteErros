@@ -21,12 +21,44 @@ public class LanguageSwitcher : MonoBehaviour
     [Tooltip("Objeto que será ativado quando o idioma correspondente estiver ativo")]
     [SerializeField] private GameObject selectedIndicatorEN;
 
+    [Header("Sprite Swap (Optional)")]
+    [Tooltip("Sprite normal do botão PT")]
+    [SerializeField] private Sprite ptNormalSprite;
+
+    [Tooltip("Sprite selecionado do botão PT")]
+    [SerializeField] private Sprite ptSelectedSprite;
+
+    [Tooltip("Sprite normal do botão EN")]
+    [SerializeField] private Sprite enNormalSprite;
+
+    [Tooltip("Sprite selecionado do botão EN")]
+    [SerializeField] private Sprite enSelectedSprite;
+
+    private Image ptButtonImage;
+    private Image enButtonImage;
+
     private void Start()
     {
         // Se não houver botões atribuídos, tenta pegar do próprio objeto
         if (portugueseButton == null)
         {
             portugueseButton = GetComponent<Button>();
+        }
+
+        if (englishButton == null)
+        {
+            englishButton = GetComponent<Button>();
+        }
+
+        // Pega as referências das imagens dos botões
+        if (portugueseButton != null)
+        {
+            ptButtonImage = portugueseButton.GetComponent<Image>();
+        }
+
+        if (englishButton != null)
+        {
+            enButtonImage = englishButton.GetComponent<Image>();
         }
 
         // Adiciona listeners aos botões
@@ -132,15 +164,25 @@ public class LanguageSwitcher : MonoBehaviour
             selectedIndicatorEN.SetActive(!isPortuguese);
         }
 
-        // Atualiza interatividade dos botões (opcional)
-        if (portugueseButton != null)
+        // Atualiza sprites dos botões manualmente (força o estado selected permanente)
+        UpdateButtonSprites(isPortuguese);
+    }
+
+    /// <summary>
+    /// Atualiza os sprites dos botões para manter o estado selecionado
+    /// </summary>
+    private void UpdateButtonSprites(bool isPortuguese)
+    {
+        // Atualiza sprite do botão PT
+        if (ptButtonImage != null && ptNormalSprite != null && ptSelectedSprite != null)
         {
-            portugueseButton.interactable = !isPortuguese;
+            ptButtonImage.sprite = isPortuguese ? ptSelectedSprite : ptNormalSprite;
         }
 
-        if (englishButton != null)
+        // Atualiza sprite do botão EN
+        if (enButtonImage != null && enNormalSprite != null && enSelectedSprite != null)
         {
-            englishButton.interactable = isPortuguese;
+            enButtonImage.sprite = isPortuguese ? enNormalSprite : enSelectedSprite;
         }
     }
 }
